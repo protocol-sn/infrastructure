@@ -1,0 +1,72 @@
+services:
+  reverse-proxy:
+    image: "reverse-proxy"
+    container_name: "reverse-proxy"
+    restart: "always"
+    networks: 
+      - "social-network-ecosystem"
+    ports:
+      - "5005:5005"
+    depends_on:
+      - keycloak
+      - psn-user-plugin
+      - psn-blog-plugin
+      - psn-node-manager
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.0
+    depends_on:
+      - db
+    environment:
+      - "KC_HEALTH_ENABLED=true"
+      - "KC_METRICS_ENABLED=true"
+      - "KC_DB=postgres"
+      - "KC_DB_URL=jdbc:postgresql://db:5432/keycloak"
+      - "KC_DB_USERNAME=postgres"
+      - "KC_DB_PASSWORD=postgres"
+      - "KC_BOOTSTRAP_ADMIN_USERNAME=admin"
+      - "KC_BOOTSTRAP_ADMIN_PASSWORD=admin"
+    command: start-dev --import-realm --log-level=INFO --hostname-debug false --proxy-headers xforwarded
+    volumes:
+      - ./ecosystem.json:/opt/keycloak/data/import/ecosystem.json
+      - ../keycloak-interaction/keycloak-custom-event-listener/target/custom-event-listener.jar://opt/keycloak/providers/custom-event-listener.jar
+    networks:
+      - social-network-ecosystem
+  db:
+    image: postgres
+    restart: always
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER:
+      POSTGRES_DB: resume
+    volumes:
+      - ../keycloak-interaction/keycloak/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - social-network-ecosystem
+  psn-node-manager:
+    image: psn-node-manager
+    networks:
+      - social-network-ecosystem
+    depends_on:
+      - keycloak
+  psn-user-plugin:
+    image: psn-user-plugin
+    networks:
+      - social-network-ecosystem
+    depends_on:
+      - psn-node-manager
+  psn-blog-plugin:
+    image: psn-blog-plugin
+    ports:
+      - 8082:8080
+    networks:
+      - social-network-ecosystem
+    depends_on:
+      - psn-node-manager
+  
+  
+networks:
+  social-network-ecosystem:
+    driver: bridge
+    name: social-network-ecosystem
+    external: true
