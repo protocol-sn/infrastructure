@@ -13,22 +13,11 @@ services:
       - psn-blog-plugin
       - psn-node-manager
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3.0
+    image: local-keycloak
+    ports:
+      - "9080:8080"
     depends_on:
       - db
-    environment:
-      - "KC_HEALTH_ENABLED=true"
-      - "KC_METRICS_ENABLED=true"
-      - "KC_DB=postgres"
-      - "KC_DB_URL=jdbc:postgresql://db:5432/keycloak"
-      - "KC_DB_USERNAME=postgres"
-      - "KC_DB_PASSWORD=postgres"
-      - "KC_BOOTSTRAP_ADMIN_USERNAME=admin"
-      - "KC_BOOTSTRAP_ADMIN_PASSWORD=admin"
-    command: start-dev --import-realm --log-level=INFO --hostname-debug false --proxy-headers xforwarded
-    volumes:
-      - ./ecosystem.json:/opt/keycloak/data/import/ecosystem.json
-      - ../keycloak-interaction/keycloak-custom-event-listener/target/custom-event-listener.jar://opt/keycloak/providers/custom-event-listener.jar
     networks:
       - social-network-ecosystem
   db:
@@ -45,12 +34,16 @@ services:
       - social-network-ecosystem
   psn-node-manager:
     image: psn-node-manager
+    ports:
+      - "8080:8080"
     networks:
       - social-network-ecosystem
     depends_on:
       - keycloak
   psn-user-plugin:
     image: psn-user-plugin
+    ports:
+      - "8081:8080"
     networks:
       - social-network-ecosystem
     depends_on:
@@ -58,7 +51,7 @@ services:
   psn-blog-plugin:
     image: psn-blog-plugin
     ports:
-      - 8082:8080
+      - "8082:8080"
     networks:
       - social-network-ecosystem
     depends_on:
@@ -69,4 +62,4 @@ networks:
   social-network-ecosystem:
     driver: bridge
     name: social-network-ecosystem
-    external: true
+    external: false
