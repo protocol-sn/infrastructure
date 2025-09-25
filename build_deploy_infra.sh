@@ -11,5 +11,9 @@ docker build -t psn-user-plugin .
 cd ../blog-plugin/blog-plugin
 ./gradlew clean assemble
 docker build -t psn-blog-plugin .
+cd ../blog-plugin-ui
+docker build -t psn-blog-plugin-ui .
 cd ../../infrastructure
 docker compose up -d
+
+docker run -p 4201:80 psn-blog-plugin-ui
